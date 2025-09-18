@@ -16,6 +16,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Environment
+.env
 .env.local
 .env.*.local
 
@@ -59,3 +60,10 @@ yarn-error.log*
 # OS
 Thumbs.db
 desktop.ini
+
+# Claude artifacts
+.claude/
+
+# Docker volumes
+volumes/
+data/

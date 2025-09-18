@@ -1,0 +1,45 @@
+services:
+  ankitool:
+    build: .
+    container_name: ankitool
+    ports:
+      - "5000:5000"
+    environment:
+      # Anki Connection Settings
+      - ANKI_HOST=${ANKI_HOST:-host.docker.internal}
+      - ANKI_PORT=${ANKI_PORT:-8765}
+      
+      # LLM Provider Settings
+      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
+      - LLM_MODEL=${LLM_MODEL:-gemini-2.0-flash-exp}
+      
+      # API Keys (set in .env file)
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      
+      # Custom LLM Settings
+      - CUSTOM_ENDPOINT=${CUSTOM_ENDPOINT:-}
+      - CUSTOM_MODEL=${CUSTOM_MODEL:-}
+      - CUSTOM_API_KEY=${CUSTOM_API_KEY:-}
+    volumes:
+      # Mount model instructions for persistence
+      - ./model_instructions.json:/app/model_instructions.json
+      # Mount .env for runtime configuration
+      - ./.env:/app/.env
+    restart: unless-stopped
+    # Use host network mode for better Anki connectivity on Linux
+    # Uncomment the following line and comment out the ports section above
+    # network_mode: "host"
+    
+  # Optional: Local LLM service (e.g., Ollama)
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   restart: unless-stopped
+
+# volumes:
+#   ollama_data:
