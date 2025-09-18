@@ -114,6 +114,25 @@ class LLMClient:
                      additional_context: str = None) -> Dict[str, str]:
         """Generate note fields using LLM"""
         
+        # Parse instructions if they're field-specific
+        field_instructions = {}
+        strict_format = True
+        validate_output = True
+        
+        if instructions:
+            try:
+                inst_obj = json.loads(instructions) if isinstance(instructions, str) else instructions
+                if isinstance(inst_obj, dict) and 'fields' in inst_obj:
+                    field_instructions = inst_obj['fields']
+                    strict_format = inst_obj.get('strictFormat', True)
+                    validate_output = inst_obj.get('validateOutput', True)
+                else:
+                    # Old format - single instruction string
+                    instructions = str(instructions)
+            except:
+                # If parsing fails, treat as old format
+                pass
+        
         # Build prompt
         prompt = f"""Generate flashcard content for the word/phrase: "{word}"
 Target language: {language}
@@ -124,7 +143,19 @@ CRITICAL: ALL content (meanings, definitions, examples, explanations) MUST be wr
 Do NOT mix languages. If the word is in English but target language is Vietnamese, write meanings in Vietnamese.
 
 """
-        if instructions:
+        
+        # Add field-specific instructions
+        if field_instructions:
+            prompt += "Field-specific instructions:\n"
+            for field in fields:
+                if field in field_instructions:
+                    prompt += f"- {field}: {field_instructions[field]}\n"
+                else:
+                    # No instruction for this field, LLM will use defaults
+                    prompt += f"- {field}: (Generate appropriate content based on field name)\n"
+            prompt += "\n"
+        elif instructions and not field_instructions:
+            # Old format compatibility
             prompt += f"Model-specific instructions: {instructions}\n\n"
         
         if additional_context:
@@ -136,7 +167,11 @@ Do NOT mix languages. If the word is in English but target language is Vietnames
         elif "Text" in fields:
             prompt += "For Cloze cards, use {{c1::text}} format to mark deletions. You can use multiple cloze deletions like {{c1::first}}, {{c2::second}}.\n"
         
-        prompt += "\nReturn ONLY a JSON object with the field names as keys and content as values. No additional text or markdown formatting."
+        if strict_format:
+            prompt += "\nIMPORTANT: Return ONLY a valid JSON object with EXACTLY these field names as keys: "
+            prompt += f"{json.dumps(fields)}. No additional text, no markdown formatting, no explanations."
+        else:
+            prompt += "\nReturn ONLY a JSON object with the field names as keys and content as values. No additional text or markdown formatting."
         
         if self.provider == LLMProvider.OPENAI:
             result = self._generate_openai(prompt)
@@ -145,23 +180,33 @@ Do NOT mix languages. If the word is in English but target language is Vietnames
         elif self.provider == LLMProvider.CUSTOM:
             result = self._generate_custom(prompt)
         
-        # Validate output for THPTQG form
-        if model_name == "THPTQG form" and "suggest" in result:
-            # Ensure the Word field matches input
-            if "Word" in result and result["Word"] != word:
-                result["Word"] = word
+        # Validate output if enabled
+        if validate_output:
+            # Validate output for THPTQG form
+            if model_name == "THPTQG form" and "suggest" in result:
+                # Ensure the Word field matches input
+                if "Word" in result and result["Word"] != word.lower():
+                    result["Word"] = word.lower()
+                
+                # Validate suggest pattern
+                if "suggest" in result:
+                    pattern = result["suggest"]
+                    # Check if pattern length matches word length
+                    if len(pattern.replace(" ", "")) != len(word):
+                        # Generate a simple pattern: keep first and last letter
+                        if len(word) > 2:
+                            middle_underscores = "_" * (len(word) - 2)
+                            result["suggest"] = word[0] + middle_underscores + word[-1]
+                        else:
+                            result["suggest"] = word
             
-            # Validate suggest pattern
-            if "suggest" in result:
-                pattern = result["suggest"]
-                # Check if pattern length matches word length
-                if len(pattern.replace(" ", "")) != len(word):
-                    # Generate a simple pattern: keep first and last letter
-                    if len(word) > 2:
-                        middle_underscores = "_" * (len(word) - 2)
-                        result["suggest"] = word[0] + middle_underscores + word[-1]
-                    else:
-                        result["suggest"] = word
+            # General validation: ensure input word is not modified
+            for field in ["Word", "Front", "Term"]:
+                if field in result and field in fields:
+                    # Check if this field should contain the original word
+                    if result[field] != word and word in result[field]:
+                        # The LLM might have modified the word, restore it
+                        result[field] = result[field].replace(result[field].split()[0], word)
         
         return result
     
@@ -279,14 +324,18 @@ def load_model_instructions():
     """Load model instructions from file if exists"""
     instructions_file = "model_instructions.json"
     if os.path.exists(instructions_file):
-        with open(instructions_file, 'r') as f:
-            return json.load(f)
+        try:
+            with open(instructions_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"Error loading model instructions: {e}")
+            return {}
     return {}
 
 def save_model_instructions(instructions):
     """Save model instructions to file"""
-    with open("model_instructions.json", 'w') as f:
-        json.dump(instructions, f, indent=2)
+    with open("model_instructions.json", 'w', encoding='utf-8') as f:
+        json.dump(instructions, f, indent=2, ensure_ascii=False)
 
 def batch_import_from_file(client: AnkiConnectClient, llm_client: LLMClient, 
                           filename: str, deck_name: str, model_name: str, 

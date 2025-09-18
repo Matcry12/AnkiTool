@@ -111,23 +111,58 @@
         <!-- Model Instructions Tab -->
         <div class="tab-content" id="instructions-tab">
             <div class="instructions-container">
-                <h3>Model Instructions</h3>
-                <p>Configure special instructions for each model type.</p>
+                <h2>Model Instructions</h2>
+                <p class="instructions-intro">Configure how each field should be generated for your Anki models. These instructions help ensure consistent and accurate card generation.</p>
                 
                 <div class="form-group">
-                    <label for="instructionModel">Select Model:</label>
+                    <label for="instructionModel">Select Anki Model:</label>
                     <select id="instructionModel" name="instructionModel">
-                        <option value="">Select a model...</option>
+                        <option value="">Select a model to configure...</option>
                     </select>
                 </div>
 
-                <div class="form-group" id="instructionEditGroup" style="display: none;">
-                    <label for="instructionText">Instructions:</label>
-                    <textarea id="instructionText" name="instructionText" rows="5"></textarea>
-                    <button class="btn btn-primary" id="saveInstructionBtn">Save Instructions</button>
+                <div id="modelFieldsConfig" style="display: none;">
+                    <div class="model-info-card">
+                        <h3 id="selectedModelName"></h3>
+                        <div id="modelFieldsList" class="fields-list">
+                            <!-- Fields will be dynamically added here -->
+                        </div>
+                    </div>
+
+                    <div class="output-format-section">
+                        <h4>🔒 Output Format Control</h4>
+                        <div class="format-control-card">
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="strictFormat" checked>
+                                    Enforce strict JSON output
+                                </label>
+                                <small class="form-help">Ensures LLM returns only the required fields without interpretation</small>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="validateOutput" checked>
+                                    Validate field contents
+                                </label>
+                                <small class="form-help">Checks that sensitive words are not modified by the LLM</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="instruction-actions">
+                        <button class="btn btn-primary" id="saveFieldInstructionsBtn">
+                            <span class="btn-icon">💾</span> Save Field Instructions
+                        </button>
+                        <button class="btn btn-secondary" id="previewInstructionBtn">
+                            <span class="btn-icon">👁</span> Preview Generated Prompt
+                        </button>
+                    </div>
                 </div>
 
-                <div class="current-instructions" id="currentInstructions"></div>
+                <div class="current-instructions" id="currentInstructions">
+                    <h3>Saved Instructions</h3>
+                    <div id="savedInstructionsList"></div>
+                </div>
             </div>
         </div>
 

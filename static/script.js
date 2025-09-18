@@ -1,6 +1,7 @@
 // Global variables
 let currentNote = null;
 let modelInstructions = {};
+let currentModelFields = [];
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -108,7 +109,19 @@ async function loadModelInstructions() {
         const response = await fetch('/api/model_instructions');
         const data = await response.json();
         modelInstructions = data.instructions;
-        updateCurrentInstructions();
+        
+        // Parse string instructions to objects
+        for (const [model, instruction] of Object.entries(modelInstructions)) {
+            if (typeof instruction === 'string') {
+                try {
+                    modelInstructions[model] = JSON.parse(instruction);
+                } catch (e) {
+                    // Keep as string if not valid JSON
+                }
+            }
+        }
+        
+        updateSavedInstructions();
     } catch (error) {
         console.error('Failed to load model instructions:', error);
     }
@@ -132,7 +145,8 @@ function setupEventListeners() {
     
     // Model instructions
     document.getElementById('instructionModel').addEventListener('change', handleInstructionModelChange);
-    document.getElementById('saveInstructionBtn').addEventListener('click', handleSaveInstruction);
+    document.getElementById('saveFieldInstructionsBtn').addEventListener('click', handleSaveFieldInstructions);
+    document.getElementById('previewInstructionBtn').addEventListener('click', handlePreviewInstruction);
     
     // Settings
     document.getElementById('testAnkiConnection').addEventListener('click', handleTestConnection);
@@ -353,33 +367,116 @@ async function handleBatchImport(event) {
 }
 
 // Handle instruction model change
-function handleInstructionModelChange(event) {
-    const model = event.target.value;
-    const editGroup = document.getElementById('instructionEditGroup');
-    const textArea = document.getElementById('instructionText');
+async function handleInstructionModelChange(event) {
+    const modelName = event.target.value;
+    const fieldsConfig = document.getElementById('modelFieldsConfig');
+    const selectedModelName = document.getElementById('selectedModelName');
+    const fieldsList = document.getElementById('modelFieldsList');
     
-    if (model) {
-        editGroup.style.display = 'block';
-        textArea.value = modelInstructions[model] || '';
-    } else {
-        editGroup.style.display = 'none';
+    if (!modelName) {
+        fieldsConfig.style.display = 'none';
+        return;
+    }
+    
+    try {
+        // Get model fields
+        const response = await fetch(`/api/model_fields/${encodeURIComponent(modelName)}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        currentModelFields = data.fields;
+        selectedModelName.textContent = modelName;
+        
+        // Build fields UI
+        let fieldsHtml = '';
+        data.fields.forEach(field => {
+            const fieldInstructions = modelInstructions[modelName]?.fields?.[field] || '';
+            const fieldType = guessFieldType(field);
+            
+            fieldsHtml += `
+                <div class="field-instruction-item">
+                    <div class="field-header">
+                        <span class="field-name">${field}</span>
+                        <span class="field-type">${fieldType}</span>
+                    </div>
+                    <textarea 
+                        class="field-instruction-input" 
+                        data-field="${field}"
+                        placeholder="Describe what content should be generated for this field..."
+                    >${fieldInstructions}</textarea>
+                </div>
+            `;
+        });
+        
+        fieldsList.innerHTML = fieldsHtml;
+        fieldsConfig.style.display = 'block';
+        
+        // Load saved format settings
+        if (modelInstructions[modelName]) {
+            document.getElementById('strictFormat').checked = modelInstructions[modelName].strictFormat !== false;
+            document.getElementById('validateOutput').checked = modelInstructions[modelName].validateOutput !== false;
+        }
+        
+    } catch (error) {
+        showError(`Failed to load model fields: ${error.message}`);
     }
 }
 
-// Handle save instruction
-async function handleSaveInstruction() {
-    const model = document.getElementById('instructionModel').value;
-    const instruction = document.getElementById('instructionText').value;
+// Guess field type based on name
+function guessFieldType(fieldName) {
+    const lower = fieldName.toLowerCase();
+    if (lower.includes('audio') || lower.includes('sound')) return 'Audio';
+    if (lower.includes('image') || lower.includes('picture')) return 'Image';
+    if (lower.includes('example') || lower.includes('sentence')) return 'Example';
+    if (lower.includes('meaning') || lower.includes('definition')) return 'Definition';
+    if (lower.includes('pronunciation')) return 'Pronunciation';
+    return 'Text';
+}
+
+// Handle save field instructions
+async function handleSaveFieldInstructions() {
+    const modelName = document.getElementById('instructionModel').value;
+    if (!modelName) return;
     
-    if (!model) return;
+    // Collect field instructions (only non-empty ones)
+    const fieldInstructions = {};
+    let hasAnyInstructions = false;
+    
+    document.querySelectorAll('.field-instruction-input').forEach(input => {
+        const field = input.dataset.field;
+        const value = input.value.trim();
+        if (value) {
+            fieldInstructions[field] = value;
+            hasAnyInstructions = true;
+        }
+    });
+    
+    // Get format settings
+    const strictFormat = document.getElementById('strictFormat').checked;
+    const validateOutput = document.getElementById('validateOutput').checked;
+    
+    // Build instruction object (even if no field instructions)
+    const instruction = {
+        fields: fieldInstructions,
+        strictFormat: strictFormat,
+        validateOutput: validateOutput
+    };
+    
+    // Show info if no field instructions
+    if (!hasAnyInstructions) {
+        console.log('No field-specific instructions provided, LLM will use defaults');
+    }
     
     try {
         const response = await fetch('/api/model_instructions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model_name: model,
-                instruction: instruction
+                model_name: modelName,
+                instruction: instruction  // Send as object, not string
             })
         });
         
@@ -389,33 +486,81 @@ async function handleSaveInstruction() {
             throw new Error(result.error);
         }
         
-        modelInstructions[model] = instruction;
-        updateCurrentInstructions();
-        showSuccess('Instructions saved successfully');
+        modelInstructions[modelName] = instruction;
+        updateSavedInstructions();
+        showSuccess('Field instructions saved successfully');
         
     } catch (error) {
         showError(`Failed to save instructions: ${error.message}`);
     }
 }
 
-// Update current instructions display
-function updateCurrentInstructions() {
-    const container = document.getElementById('currentInstructions');
+// Handle preview instruction
+function handlePreviewInstruction() {
+    const modelName = document.getElementById('instructionModel').value;
+    if (!modelName) return;
+    
+    const fieldInstructions = {};
+    document.querySelectorAll('.field-instruction-input').forEach(input => {
+        const field = input.dataset.field;
+        const value = input.value.trim();
+        if (value) {
+            fieldInstructions[field] = value;
+        }
+    });
+    
+    const strictFormat = document.getElementById('strictFormat').checked;
+    
+    let preview = `Model: ${modelName}\nWord: [example word]\nLanguage: [target language]\n\n`;
+    preview += `Instructions:\n`;
+    
+    for (const [field, instruction] of Object.entries(fieldInstructions)) {
+        preview += `\n${field}: ${instruction}`;
+    }
+    
+    if (strictFormat) {
+        preview += `\n\nOutput Format: STRICT JSON - Return ONLY a JSON object with these exact fields.`;
+    }
+    
+    alert(preview);
+}
+
+// Update saved instructions display
+function updateSavedInstructions() {
+    const container = document.getElementById('savedInstructionsList');
     
     if (Object.keys(modelInstructions).length === 0) {
-        container.innerHTML = '<p>No model instructions configured yet.</p>';
+        container.innerHTML = '<p class="text-muted">No instructions saved yet.</p>';
         return;
     }
     
-    let html = '<h4>Current Instructions:</h4>';
+    let html = '';
     
-    for (const [model, instruction] of Object.entries(modelInstructions)) {
+    for (const [modelName, instruction] of Object.entries(modelInstructions)) {
+        // Parse instruction if it's a string
+        const inst = typeof instruction === 'string' ? JSON.parse(instruction) : instruction;
+        const fieldCount = inst.fields ? Object.keys(inst.fields).length : 0;
+        
         html += `
-            <div class="instruction-item">
-                <div class="instruction-model">${model}</div>
-                <div class="instruction-text">${instruction}</div>
-            </div>
+            <div class="saved-instruction-card">
+                <div class="saved-instruction-header">
+                    <span class="saved-model-name">${modelName}</span>
+                    <span class="saved-fields-count">${fieldCount} field${fieldCount !== 1 ? 's' : ''} configured</span>
+                </div>
         `;
+        
+        if (inst.fields) {
+            for (const [field, fieldInst] of Object.entries(inst.fields)) {
+                html += `
+                    <div class="saved-field-item">
+                        <div class="saved-field-name">${field}</div>
+                        <div class="saved-field-instruction">${fieldInst}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        html += `</div>`;
     }
     
     container.innerHTML = html;

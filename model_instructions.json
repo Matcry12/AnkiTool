@@ -1,4 +1,22 @@
 {
-  "THPTQG form": " \"Word\" should be lowercase. \"suggest\": hide 80% of characters like s___g__. \"audio\" and \"audio example\" should be empty. IMPORTANT: ALL content including meanings, definitions, and examples MUST be in the TARGET LANGUAGE specified by the user, Example should be english",
-  "Basic": "\"suggest\": hide 80% of characters like s____g__. \"Front\" and \"Back\" content MUST be in the TARGET LANGUAGE specified by the user. Do not mix languages."
+  "THPTQG form": {
+    "fields": {
+      "Word": "Word should be lower, like WORD to word",
+      "WordType": "Type should be v, n, adj, adv",
+      "Phonetic": "Phonetic",
+      "Example": "Example use English",
+      "Suggest": "Suggest should be like 80% characters of word are hide, suggest to s___g__",
+      "Meaning": "Meaning is translate follow language",
+      "Audio": "empty",
+      "Audio example": "empty"
+    },
+    "strictFormat": true,
+    "validateOutput": true
+  },
+  "Basic": {
+    "fields": {},
+    "strictFormat": true,
+    "validateOutput": true,
+    "legacyInstruction": "\"suggest\": hide 80% of characters like s____g__. \"Front\" and \"Back\" content MUST be in the TARGET LANGUAGE specified by the user. Do not mix languages."
+  }
 }

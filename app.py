@@ -66,6 +66,15 @@ def get_model_fields(model_name):
 def get_model_instructions():
     try:
         instructions = load_model_instructions()
+        # Ensure all instructions are properly formatted
+        for model, inst in instructions.items():
+            if isinstance(inst, str):
+                # Try to parse string instructions
+                try:
+                    instructions[model] = json.loads(inst)
+                except:
+                    # Keep as string if not parseable
+                    pass
         return jsonify({"instructions": instructions})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -77,8 +86,24 @@ def update_model_instructions():
         model_name = data.get('model_name')
         instruction = data.get('instruction')
         
-        instructions = load_model_instructions()
-        instructions[model_name] = instruction
+        # Handle both object and string formats
+        if isinstance(instruction, dict):
+            # Already an object, save as-is
+            instructions = load_model_instructions()
+            instructions[model_name] = instruction
+        elif isinstance(instruction, str):
+            # String format (legacy), try to parse it
+            try:
+                instructions = load_model_instructions()
+                instructions[model_name] = json.loads(instruction)
+            except json.JSONDecodeError:
+                # If it's not valid JSON, save as plain string
+                instructions = load_model_instructions()
+                instructions[model_name] = instruction
+        else:
+            instructions = load_model_instructions()
+            instructions[model_name] = instruction
+        
         save_model_instructions(instructions)
         
         return jsonify({"status": "success", "message": "Instructions updated"})
