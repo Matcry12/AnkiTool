@@ -38,6 +38,7 @@ except ImportError:
 class LLMProvider(Enum):
     OPENAI = "openai"
     GEMINI = "gemini"
+    CUSTOM = "custom"
 
 class AnkiConnectClient:
     def __init__(self, host: str = "192.168.100.17", port: int = 8765):
@@ -102,6 +103,11 @@ class LLMClient:
             self.model = model or "gemini-2.5-flash-lite"
             if not self.api_key:
                 raise ValueError("Gemini API key not found. Set GEMINI_API_KEY environment variable.")
+        
+        elif provider == LLMProvider.CUSTOM:
+            self.api_key = api_key or os.getenv("CUSTOM_API_KEY", "dummy-key")
+            self.model = model or os.getenv("CUSTOM_MODEL", "llama2")
+            self.api_base = api_base or os.getenv("CUSTOM_ENDPOINT", "http://localhost:11434/v1")
     
     def generate_note(self, word: str, model_name: str, fields: List[str], 
                      language: str, instructions: str = None, 
@@ -136,6 +142,8 @@ Do NOT mix languages. If the word is in English but target language is Vietnames
             result = self._generate_openai(prompt)
         elif self.provider == LLMProvider.GEMINI:
             result = self._generate_gemini(prompt)
+        elif self.provider == LLMProvider.CUSTOM:
+            result = self._generate_custom(prompt)
         
         # Validate output for THPTQG form
         if model_name == "THPTQG form" and "suggest" in result:
@@ -190,6 +198,46 @@ Do NOT mix languages. If the word is in English but target language is Vietnames
         response = model.generate_content(prompt)
         content = response.text.strip()
         return self._parse_json_response(content)
+    
+    def _generate_custom(self, prompt: str) -> Dict[str, str]:
+        """Generate using custom OpenAI-compatible endpoint"""
+        try:
+            import requests
+        except ImportError:
+            raise ImportError("requests library is required for custom LLM endpoints")
+        
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        if self.api_key and self.api_key != "dummy-key":
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant that creates educational flashcards. Return only valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.7,
+            "max_tokens": 500
+        }
+        
+        try:
+            response = requests.post(
+                f"{self.api_base}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            content = data['choices'][0]['message']['content'].strip()
+            return self._parse_json_response(content)
+            
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Custom LLM request failed: {e}")
     
     def _parse_json_response(self, content: str) -> Dict[str, str]:
         # Remove markdown code blocks if present

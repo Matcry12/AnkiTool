@@ -20,6 +20,7 @@
             <button class="tab-button active" data-tab="single">Single Card</button>
             <button class="tab-button" data-tab="batch">Batch Import</button>
             <button class="tab-button" data-tab="instructions">Model Instructions</button>
+            <button class="tab-button" data-tab="settings">Settings</button>
         </nav>
 
         <!-- Single Card Tab -->
@@ -127,6 +128,149 @@
                 </div>
 
                 <div class="current-instructions" id="currentInstructions"></div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-content" id="settings-tab">
+            <div class="settings-container">
+                <h2>Settings</h2>
+                
+                <!-- AnkiConnect Settings -->
+                <div class="settings-card">
+                    <div class="settings-header">
+                        <h3><i class="icon">🔌</i> AnkiConnect Settings</h3>
+                    </div>
+                    <div class="settings-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ankiHost">Host/IP Address</label>
+                                <input type="text" id="ankiHost" name="ankiHost" placeholder="localhost or 192.168.1.100">
+                                <small class="form-help">IP address where Anki is running</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="ankiPort">Port</label>
+                                <input type="number" id="ankiPort" name="ankiPort" placeholder="8765">
+                                <small class="form-help">Default: 8765</small>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-secondary" id="testAnkiConnection">
+                                <span class="btn-icon">🔍</span> Test Connection
+                            </button>
+                            <span class="connection-result" id="ankiTestResult"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LLM Settings -->
+                <div class="settings-card">
+                    <div class="settings-header">
+                        <h3><i class="icon">🤖</i> Language Model Settings</h3>
+                    </div>
+                    <div class="settings-body">
+                        <div class="form-group">
+                            <label for="llmProvider">Provider</label>
+                            <select id="llmProvider" name="llmProvider">
+                                <option value="gemini">Google Gemini</option>
+                                <option value="openai">OpenAI</option>
+                                <option value="custom">Custom (OpenAI Compatible)</option>
+                            </select>
+                        </div>
+
+                        <!-- Provider-specific settings -->
+                        <div id="providerSettings">
+                            <!-- Gemini Settings -->
+                            <div class="provider-config" id="geminiConfig">
+                                <div class="form-group">
+                                    <label for="geminiModel">Model</label>
+                                    <select id="geminiModel" name="geminiModel">
+                                        <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Fast)</option>
+                                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
+                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Advanced)</option>
+                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                        <option value="custom">Other (Enter custom model name)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="geminiCustomModelGroup" style="display: none;">
+                                    <label for="geminiCustomModel">Custom Model Name</label>
+                                    <input type="text" id="geminiCustomModel" name="geminiCustomModel" placeholder="e.g., gemini-2.0-pro-vision">
+                                    <small class="form-help">Enter the exact model name from Google AI Studio</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="geminiApiKey">API Key</label>
+                                    <div class="input-with-toggle">
+                                        <input type="password" id="geminiApiKey" name="geminiApiKey" placeholder="AIza...">
+                                        <button type="button" class="btn-icon-only" onclick="togglePasswordVisibility('geminiApiKey')">👁</button>
+                                    </div>
+                                    <small class="form-help">Get your key from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a></small>
+                                </div>
+                            </div>
+
+                            <!-- OpenAI Settings -->
+                            <div class="provider-config" id="openaiConfig" style="display: none;">
+                                <div class="form-group">
+                                    <label for="openaiModel">Model</label>
+                                    <select id="openaiModel" name="openaiModel">
+                                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Fast)</option>
+                                        <option value="gpt-4">GPT-4 (Advanced)</option>
+                                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                        <option value="gpt-4o">GPT-4o (Optimized)</option>
+                                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                        <option value="custom">Other (Enter custom model name)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="openaiCustomModelGroup" style="display: none;">
+                                    <label for="openaiCustomModel">Custom Model Name</label>
+                                    <input type="text" id="openaiCustomModel" name="openaiCustomModel" placeholder="e.g., gpt-4-1106-preview">
+                                    <small class="form-help">Enter the exact model name from OpenAI documentation</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="openaiApiKey">API Key</label>
+                                    <div class="input-with-toggle">
+                                        <input type="password" id="openaiApiKey" name="openaiApiKey" placeholder="sk-...">
+                                        <button type="button" class="btn-icon-only" onclick="togglePasswordVisibility('openaiApiKey')">👁</button>
+                                    </div>
+                                    <small class="form-help">Get your key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a></small>
+                                </div>
+                            </div>
+
+                            <!-- Custom LLM Settings -->
+                            <div class="provider-config" id="customConfig" style="display: none;">
+                                <div class="form-group">
+                                    <label for="customEndpoint">API Endpoint</label>
+                                    <input type="text" id="customEndpoint" name="customEndpoint" placeholder="http://localhost:11434/v1">
+                                    <small class="form-help">OpenAI-compatible API endpoint (e.g., Ollama, LM Studio)</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="customModel">Model Name</label>
+                                    <input type="text" id="customModel" name="customModel" placeholder="llama2, mistral, etc.">
+                                    <small class="form-help">Check your local server for available models</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="customApiKey">API Key (if required)</label>
+                                    <div class="input-with-toggle">
+                                        <input type="password" id="customApiKey" name="customApiKey" placeholder="Optional">
+                                        <button type="button" class="btn-icon-only" onclick="togglePasswordVisibility('customApiKey')">👁</button>
+                                    </div>
+                                    <small class="form-help">Some local servers don't require an API key</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="settings-actions">
+                    <button class="btn btn-primary btn-large" id="saveSettingsBtn">
+                        <span class="btn-icon">💾</span> Save All Settings
+                    </button>
+                    <button class="btn btn-secondary" id="resetSettingsBtn">
+                        <span class="btn-icon">↺</span> Reset to Defaults
+                    </button>
+                </div>
+
+                <div class="settings-status" id="settingsStatus"></div>
             </div>
         </div>
     </div>

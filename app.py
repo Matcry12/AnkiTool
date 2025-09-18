@@ -100,8 +100,26 @@ def generate_note():
         anki_client = AnkiConnectClient(host=config["anki_host"], port=config["anki_port"])
         
         # Check if LLM is available
-        provider = LLMProvider.GEMINI if config["llm_provider"] == "gemini" else LLMProvider.OPENAI
-        llm_client = LLMClient(provider=provider, model=config["llm_model"])
+        provider_str = config["llm_provider"].lower()
+        if provider_str == "gemini":
+            provider = LLMProvider.GEMINI
+        elif provider_str == "openai":
+            provider = LLMProvider.OPENAI
+        elif provider_str == "custom":
+            provider = LLMProvider.CUSTOM
+        else:
+            provider = LLMProvider.GEMINI
+        
+        # Create LLM client with appropriate settings
+        if provider == LLMProvider.CUSTOM:
+            llm_client = LLMClient(
+                provider=provider, 
+                model=config["llm_model"],
+                api_base=os.getenv("CUSTOM_ENDPOINT", "http://localhost:11434/v1"),
+                api_key=os.getenv("CUSTOM_API_KEY", "dummy-key")
+            )
+        else:
+            llm_client = LLMClient(provider=provider, model=config["llm_model"])
         
         # Get model fields
         field_names = anki_client.get_model_field_names(model_name)
@@ -166,6 +184,102 @@ def add_note():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/settings', methods=['GET'])
+def get_settings():
+    try:
+        config = load_web_config()
+        # Don't send sensitive data like API keys
+        settings = {
+            "anki_host": config["anki_host"],
+            "anki_port": config["anki_port"],
+            "llm_provider": config["llm_provider"],
+            "llm_model": config["llm_model"]
+        }
+        
+        # Add custom endpoint if using custom provider
+        if config["llm_provider"] == "custom":
+            settings["custom_endpoint"] = os.getenv("CUSTOM_ENDPOINT", "http://localhost:11434/v1")
+        
+        return jsonify(settings)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/settings', methods=['POST'])
+def update_settings():
+    try:
+        data = request.json
+        
+        # Save to environment file
+        env_path = '.env'
+        env_vars = {}
+        
+        # Read existing env file
+        if os.path.exists(env_path):
+            with open(env_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        env_vars[key.strip()] = value.strip().strip('"\'')
+        
+        # Update with new values
+        if 'anki_host' in data:
+            env_vars['ANKI_HOST'] = data['anki_host']
+            os.environ['ANKI_HOST'] = data['anki_host']
+        if 'anki_port' in data:
+            env_vars['ANKI_PORT'] = str(data['anki_port'])
+            os.environ['ANKI_PORT'] = str(data['anki_port'])
+        if 'llm_provider' in data:
+            env_vars['LLM_PROVIDER'] = data['llm_provider']
+            os.environ['LLM_PROVIDER'] = data['llm_provider']
+        if 'llm_model' in data:
+            env_vars['LLM_MODEL'] = data['llm_model']
+            os.environ['LLM_MODEL'] = data['llm_model']
+        
+        # Handle API key if provided
+        if 'api_key' in data and data['api_key']:
+            provider = data.get('llm_provider', os.getenv('LLM_PROVIDER', 'gemini'))
+            if provider == 'gemini':
+                env_vars['GEMINI_API_KEY'] = data['api_key']
+                os.environ['GEMINI_API_KEY'] = data['api_key']
+            elif provider == 'openai':
+                env_vars['OPENAI_API_KEY'] = data['api_key']
+                os.environ['OPENAI_API_KEY'] = data['api_key']
+            elif provider == 'custom':
+                env_vars['CUSTOM_API_KEY'] = data['api_key']
+                os.environ['CUSTOM_API_KEY'] = data['api_key']
+        
+        # Handle custom endpoint
+        if 'custom_endpoint' in data and data.get('llm_provider') == 'custom':
+            env_vars['CUSTOM_ENDPOINT'] = data['custom_endpoint']
+            os.environ['CUSTOM_ENDPOINT'] = data['custom_endpoint']
+            env_vars['CUSTOM_MODEL'] = data.get('llm_model', 'llama2')
+            os.environ['CUSTOM_MODEL'] = data.get('llm_model', 'llama2')
+        
+        # Write back to .env file
+        with open(env_path, 'w') as f:
+            for key, value in env_vars.items():
+                f.write(f'{key}="{value}"\n')
+        
+        return jsonify({"status": "success", "message": "Settings updated successfully"})
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/test_anki_connection', methods=['POST'])
+def test_anki_connection():
+    try:
+        data = request.json
+        host = data.get('host', '192.168.100.17')
+        port = data.get('port', 8765)
+        
+        client = AnkiConnectClient(host=host, port=port)
+        client.get_deck_names()
+        
+        return jsonify({"status": "connected", "message": f"Successfully connected to Anki at {host}:{port}"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/api/batch_generate', methods=['POST'])
 def batch_generate():
     try:
@@ -180,8 +294,27 @@ def batch_generate():
         # Initialize clients
         anki_client = AnkiConnectClient(host=config["anki_host"], port=config["anki_port"])
         
-        provider = LLMProvider.GEMINI if config["llm_provider"] == "gemini" else LLMProvider.OPENAI
-        llm_client = LLMClient(provider=provider, model=config["llm_model"])
+        # Same provider logic as generate_note
+        provider_str = config["llm_provider"].lower()
+        if provider_str == "gemini":
+            provider = LLMProvider.GEMINI
+        elif provider_str == "openai":
+            provider = LLMProvider.OPENAI
+        elif provider_str == "custom":
+            provider = LLMProvider.CUSTOM
+        else:
+            provider = LLMProvider.GEMINI
+        
+        # Create LLM client with appropriate settings
+        if provider == LLMProvider.CUSTOM:
+            llm_client = LLMClient(
+                provider=provider, 
+                model=config["llm_model"],
+                api_base=os.getenv("CUSTOM_ENDPOINT", "http://localhost:11434/v1"),
+                api_key=os.getenv("CUSTOM_API_KEY", "dummy-key")
+            )
+        else:
+            llm_client = LLMClient(provider=provider, model=config["llm_model"])
         
         # Get model fields
         field_names = anki_client.get_model_field_names(model_name)

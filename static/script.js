@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDecks();
     loadModels();
     loadModelInstructions();
+    loadSettings();
     setupTabs();
     setupEventListeners();
 });
@@ -132,6 +133,16 @@ function setupEventListeners() {
     // Model instructions
     document.getElementById('instructionModel').addEventListener('change', handleInstructionModelChange);
     document.getElementById('saveInstructionBtn').addEventListener('click', handleSaveInstruction);
+    
+    // Settings
+    document.getElementById('testAnkiConnection').addEventListener('click', handleTestConnection);
+    document.getElementById('saveSettingsBtn').addEventListener('click', handleSaveSettings);
+    document.getElementById('resetSettingsBtn').addEventListener('click', handleResetSettings);
+    document.getElementById('llmProvider').addEventListener('change', handleProviderChange);
+    
+    // Model selection changes
+    document.getElementById('geminiModel').addEventListener('change', handleModelChange);
+    document.getElementById('openaiModel').addEventListener('change', handleModelChange);
 }
 
 // Handle single card form submission
@@ -458,6 +469,265 @@ function toggleDetails(index) {
     } else {
         detailsDiv.style.display = 'none';
         resultItem.classList.remove('expanded');
+    }
+}
+
+// Load settings
+async function loadSettings() {
+    try {
+        const response = await fetch('/api/settings');
+        const settings = await response.json();
+        
+        if (settings.error) {
+            console.error('Failed to load settings:', settings.error);
+            return;
+        }
+        
+        // Populate settings form
+        document.getElementById('ankiHost').value = settings.anki_host || '192.168.100.17';
+        document.getElementById('ankiPort').value = settings.anki_port || 8765;
+        
+        // Set LLM provider and trigger change event
+        const provider = settings.llm_provider || 'gemini';
+        document.getElementById('llmProvider').value = provider;
+        handleProviderChange({ target: { value: provider } });
+        
+        // Set model based on provider
+        if (provider === 'gemini') {
+            const model = settings.llm_model || 'gemini-2.5-flash-lite';
+            const geminiSelect = document.getElementById('geminiModel');
+            
+            // Check if model exists in dropdown
+            if (Array.from(geminiSelect.options).some(opt => opt.value === model)) {
+                geminiSelect.value = model;
+            } else {
+                // It's a custom model
+                geminiSelect.value = 'custom';
+                document.getElementById('geminiCustomModel').value = model;
+                document.getElementById('geminiCustomModelGroup').style.display = 'block';
+            }
+        } else if (provider === 'openai') {
+            const model = settings.llm_model || 'gpt-3.5-turbo';
+            const openaiSelect = document.getElementById('openaiModel');
+            
+            // Check if model exists in dropdown
+            if (Array.from(openaiSelect.options).some(opt => opt.value === model)) {
+                openaiSelect.value = model;
+            } else {
+                // It's a custom model
+                openaiSelect.value = 'custom';
+                document.getElementById('openaiCustomModel').value = model;
+                document.getElementById('openaiCustomModelGroup').style.display = 'block';
+            }
+        } else if (provider === 'custom') {
+            document.getElementById('customModel').value = settings.llm_model || '';
+            document.getElementById('customEndpoint').value = settings.custom_endpoint || '';
+        }
+        
+    } catch (error) {
+        console.error('Failed to load settings:', error);
+    }
+}
+
+// Handle test connection
+async function handleTestConnection() {
+    const host = document.getElementById('ankiHost').value;
+    const port = document.getElementById('ankiPort').value;
+    
+    if (!host || !port) {
+        showError('Please enter both host and port');
+        return;
+    }
+    
+    try {
+        showSettingsStatus('Testing connection...', 'info');
+        
+        const response = await fetch('/api/test_anki_connection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ host, port: parseInt(port) })
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'connected') {
+            showSettingsStatus(result.message, 'success');
+        } else {
+            showSettingsStatus(result.message, 'error');
+        }
+        
+    } catch (error) {
+        showSettingsStatus(`Connection failed: ${error.message}`, 'error');
+    }
+}
+
+// Handle provider change
+function handleProviderChange(event) {
+    const provider = event.target.value;
+    
+    // Hide all provider configs
+    document.querySelectorAll('.provider-config').forEach(config => {
+        config.style.display = 'none';
+    });
+    
+    // Show selected provider config
+    if (provider === 'gemini') {
+        document.getElementById('geminiConfig').style.display = 'block';
+    } else if (provider === 'openai') {
+        document.getElementById('openaiConfig').style.display = 'block';
+    } else if (provider === 'custom') {
+        document.getElementById('customConfig').style.display = 'block';
+    }
+}
+
+// Handle model selection change
+function handleModelChange(event) {
+    const selectId = event.target.id;
+    const selectedValue = event.target.value;
+    
+    // Determine which custom model group to show/hide
+    let customGroupId;
+    if (selectId === 'geminiModel') {
+        customGroupId = 'geminiCustomModelGroup';
+    } else if (selectId === 'openaiModel') {
+        customGroupId = 'openaiCustomModelGroup';
+    }
+    
+    if (customGroupId) {
+        const customGroup = document.getElementById(customGroupId);
+        if (selectedValue === 'custom') {
+            customGroup.style.display = 'block';
+        } else {
+            customGroup.style.display = 'none';
+        }
+    }
+}
+
+// Handle save settings
+async function handleSaveSettings() {
+    const provider = document.getElementById('llmProvider').value;
+    const settings = {
+        anki_host: document.getElementById('ankiHost').value,
+        anki_port: parseInt(document.getElementById('ankiPort').value),
+        llm_provider: provider
+    };
+    
+    // Get model and API key based on provider
+    if (provider === 'gemini') {
+        const geminiModel = document.getElementById('geminiModel').value;
+        if (geminiModel === 'custom') {
+            settings.llm_model = document.getElementById('geminiCustomModel').value;
+        } else {
+            settings.llm_model = geminiModel;
+        }
+        const apiKey = document.getElementById('geminiApiKey').value;
+        if (apiKey) {
+            settings.api_key = apiKey;
+        }
+    } else if (provider === 'openai') {
+        const openaiModel = document.getElementById('openaiModel').value;
+        if (openaiModel === 'custom') {
+            settings.llm_model = document.getElementById('openaiCustomModel').value;
+        } else {
+            settings.llm_model = openaiModel;
+        }
+        const apiKey = document.getElementById('openaiApiKey').value;
+        if (apiKey) {
+            settings.api_key = apiKey;
+        }
+    } else if (provider === 'custom') {
+        settings.llm_model = document.getElementById('customModel').value;
+        settings.custom_endpoint = document.getElementById('customEndpoint').value;
+        const apiKey = document.getElementById('customApiKey').value;
+        if (apiKey) {
+            settings.api_key = apiKey;
+        }
+    }
+    
+    try {
+        showSettingsStatus('Saving settings...', 'info');
+        
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            throw new Error(result.error);
+        }
+        
+        showSettingsStatus('Settings saved successfully! Refreshing page...', 'success');
+        
+        // Refresh page to apply new settings
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
+        
+    } catch (error) {
+        showSettingsStatus(`Failed to save settings: ${error.message}`, 'error');
+    }
+}
+
+// Handle reset settings
+function handleResetSettings() {
+    if (confirm('Reset all settings to default values?')) {
+        // Reset Anki settings
+        document.getElementById('ankiHost').value = '192.168.100.17';
+        document.getElementById('ankiPort').value = '8765';
+        
+        // Reset provider
+        document.getElementById('llmProvider').value = 'gemini';
+        handleProviderChange({ target: { value: 'gemini' } });
+        
+        // Reset Gemini settings
+        document.getElementById('geminiModel').value = 'gemini-2.5-flash-lite';
+        document.getElementById('geminiCustomModel').value = '';
+        document.getElementById('geminiCustomModelGroup').style.display = 'none';
+        document.getElementById('geminiApiKey').value = '';
+        
+        // Reset OpenAI settings
+        document.getElementById('openaiModel').value = 'gpt-3.5-turbo';
+        document.getElementById('openaiCustomModel').value = '';
+        document.getElementById('openaiCustomModelGroup').style.display = 'none';
+        document.getElementById('openaiApiKey').value = '';
+        
+        // Reset Custom settings
+        document.getElementById('customModel').value = '';
+        document.getElementById('customEndpoint').value = '';
+        document.getElementById('customApiKey').value = '';
+        
+        showSettingsStatus('Settings reset to defaults. Click "Save Settings" to apply.', 'info');
+    }
+}
+
+// Show settings status
+function showSettingsStatus(message, type) {
+    const statusDiv = document.getElementById('settingsStatus');
+    statusDiv.textContent = message;
+    statusDiv.className = `settings-status ${type}`;
+    statusDiv.style.display = 'block';
+    
+    if (type !== 'error') {
+        setTimeout(() => {
+            statusDiv.style.display = 'none';
+        }, 5000);
+    }
+}
+
+// Toggle password visibility
+function togglePasswordVisibility(fieldId) {
+    const field = document.getElementById(fieldId);
+    const button = field.nextElementSibling;
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        button.textContent = '🙈';
+    } else {
+        field.type = 'password';
+        button.textContent = '👁';
     }
 }
 
