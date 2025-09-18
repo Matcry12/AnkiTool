@@ -277,9 +277,19 @@ textarea {
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    transition: all 0.3s;
+}
+
+.result-item.clickable {
+    cursor: pointer;
+}
+
+.result-item.clickable:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.result-item.expanded {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .result-item.success {
@@ -290,6 +300,96 @@ textarea {
 .result-item.error {
     background-color: #f8d7da;
     color: #721c24;
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+}
+
+.result-word {
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.result-status {
+    font-size: 0.9em;
+}
+
+.result-details {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    animation: slideDown 0.3s ease-out;
+}
+
+.fields-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.field-detail {
+    display: flex;
+    gap: 10px;
+    padding: 8px;
+    background-color: rgba(255,255,255,0.3);
+    border-radius: 4px;
+}
+
+.field-label {
+    font-weight: 600;
+    min-width: 120px;
+    color: #495057;
+}
+
+.field-content {
+    flex: 1;
+    color: #212529;
+    word-break: break-word;
+}
+
+.detail-header {
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    text-transform: uppercase;
+}
+
+.error-details {
+    margin-top: 10px;
+    padding: 15px;
+    background-color: rgba(220, 53, 69, 0.1);
+    border-radius: 5px;
+    border-left: 4px solid #dc3545;
+}
+
+.error-header {
+    font-weight: 600;
+    color: #721c24;
+    margin-bottom: 8px;
+}
+
+.error-message {
+    color: #721c24;
+    font-family: monospace;
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Instructions styles */

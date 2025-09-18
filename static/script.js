@@ -311,13 +311,26 @@ async function handleBatchImport(event) {
         progressText.textContent = `${result.summary.successful} / ${result.summary.total}`;
         
         // Show results
-        result.results.forEach(item => {
+        result.results.forEach((item, index) => {
             const resultItem = document.createElement('div');
-            resultItem.className = `result-item ${item.success ? 'success' : 'error'}`;
+            resultItem.className = `result-item ${item.success ? 'success' : 'error'} clickable`;
+            resultItem.dataset.index = index;
             resultItem.innerHTML = `
-                <span>${item.word}</span>
-                <span>${item.success ? '✓ Added' : '✗ ' + (item.error || 'Failed')}</span>
+                <div class="result-header">
+                    <span class="result-word">${item.word}</span>
+                    <span class="result-status">${item.success ? '✓ Added' : '✗ ' + (item.error || 'Failed')}</span>
+                </div>
+                <div class="result-details" id="details-${index}" style="display: none;">
+                    ${item.fields ? formatFields(item.fields, item.success) : ''}
+                    ${!item.success && item.error ? formatError(item.error) : ''}
+                </div>
             `;
+            
+            // Add click handler
+            resultItem.querySelector('.result-header').addEventListener('click', () => {
+                toggleDetails(index);
+            });
+            
             resultsDiv.appendChild(resultItem);
         });
         
@@ -395,6 +408,57 @@ function updateCurrentInstructions() {
     }
     
     container.innerHTML = html;
+}
+
+// Format fields for display
+function formatFields(fields, isSuccess) {
+    let html = '<div class="fields-container">';
+    
+    // If it failed but we have fields, show a header
+    if (!isSuccess && Object.keys(fields).length > 1) {
+        html += '<div class="detail-header">Generated content (failed to add):</div>';
+    }
+    
+    for (const [field, value] of Object.entries(fields)) {
+        // Skip the Error field if it exists (handled separately)
+        if (field === 'Error') continue;
+        
+        if (value && value.toString().trim()) {  // Only show non-empty fields
+            html += `
+                <div class="field-detail">
+                    <span class="field-label">${field}:</span>
+                    <span class="field-content">${value}</span>
+                </div>
+            `;
+        }
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+// Format error message
+function formatError(error) {
+    return `
+        <div class="error-details">
+            <div class="error-header">Error Details:</div>
+            <div class="error-message">${error}</div>
+        </div>
+    `;
+}
+
+// Toggle details visibility
+function toggleDetails(index) {
+    const detailsDiv = document.getElementById(`details-${index}`);
+    const resultItem = detailsDiv.parentElement;
+    
+    if (detailsDiv.style.display === 'none') {
+        detailsDiv.style.display = 'block';
+        resultItem.classList.add('expanded');
+    } else {
+        detailsDiv.style.display = 'none';
+        resultItem.classList.remove('expanded');
+    }
 }
 
 // Utility functions

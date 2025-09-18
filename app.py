@@ -217,14 +217,29 @@ def batch_generate():
                     "word": word,
                     "success": bool(note_id),
                     "note_id": note_id,
-                    "fields": fields
+                    "fields": fields,
+                    "error": None if note_id else "Failed to add note to Anki"
                 })
                 
             except Exception as e:
+                # Try to get partial fields if generation was successful but adding failed
+                fields_data = {}
+                error_details = str(e)
+                
+                # If it's an LLM generation error, we won't have fields
+                # If it's an Anki adding error, we might have fields
+                try:
+                    # Attempt to show what fields were attempted to be generated
+                    if "fields" in locals():
+                        fields_data = fields
+                except:
+                    pass
+                
                 results.append({
                     "word": word,
                     "success": False,
-                    "error": str(e)
+                    "error": error_details,
+                    "fields": fields_data if fields_data else {"Error": error_details}
                 })
         
         successful = sum(1 for r in results if r["success"])
