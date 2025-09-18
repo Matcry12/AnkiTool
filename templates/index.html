@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anki Card Generator</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Anki Card Generator</h1>
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-icon"></span>
+                <span class="status-text">Checking connection...</span>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-button active" data-tab="single">Single Card</button>
+            <button class="tab-button" data-tab="batch">Batch Import</button>
+            <button class="tab-button" data-tab="instructions">Model Instructions</button>
+        </nav>
+
+        <!-- Single Card Tab -->
+        <div class="tab-content active" id="single-tab">
+            <form id="singleCardForm">
+                <div class="form-group">
+                    <label for="word">Word/Phrase:</label>
+                    <input type="text" id="word" name="word" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="deck">Deck:</label>
+                        <select id="deck" name="deck" required>
+                            <option value="">Loading decks...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="model">Model:</label>
+                        <select id="model" name="model" required>
+                            <option value="">Loading models...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="language">Target Language:</label>
+                    <input type="text" id="language" name="language" value="English" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Generate Card</button>
+            </form>
+
+            <div id="previewSection" class="preview-section" style="display: none;">
+                <h3>Preview</h3>
+                <div id="previewContent"></div>
+                <div class="button-group">
+                    <button class="btn btn-success" id="addCardBtn">Add to Anki</button>
+                    <button class="btn btn-secondary" id="editCardBtn">Edit</button>
+                    <button class="btn btn-danger" id="cancelBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch Import Tab -->
+        <div class="tab-content" id="batch-tab">
+            <form id="batchImportForm">
+                <div class="form-group">
+                    <label for="batchWords">Words (one per line):</label>
+                    <textarea id="batchWords" name="batchWords" rows="10" required></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="batchDeck">Deck:</label>
+                        <select id="batchDeck" name="batchDeck" required>
+                            <option value="">Loading decks...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="batchModel">Model:</label>
+                        <select id="batchModel" name="batchModel" required>
+                            <option value="">Loading models...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="batchLanguage">Target Language:</label>
+                    <input type="text" id="batchLanguage" name="batchLanguage" value="English" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Start Batch Import</button>
+            </form>
+
+            <div id="batchProgress" class="batch-progress" style="display: none;">
+                <h3>Import Progress</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">0 / 0</div>
+                <div class="batch-results" id="batchResults"></div>
+            </div>
+        </div>
+
+        <!-- Model Instructions Tab -->
+        <div class="tab-content" id="instructions-tab">
+            <div class="instructions-container">
+                <h3>Model Instructions</h3>
+                <p>Configure special instructions for each model type.</p>
+                
+                <div class="form-group">
+                    <label for="instructionModel">Select Model:</label>
+                    <select id="instructionModel" name="instructionModel">
+                        <option value="">Select a model...</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="instructionEditGroup" style="display: none;">
+                    <label for="instructionText">Instructions:</label>
+                    <textarea id="instructionText" name="instructionText" rows="5"></textarea>
+                    <button class="btn btn-primary" id="saveInstructionBtn">Save Instructions</button>
+                </div>
+
+                <div class="current-instructions" id="currentInstructions"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

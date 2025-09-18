@@ -1,0 +1,4 @@
+{
+  "THPTQG form": " \"Word\" should be lowercase. \"suggest\": hide 80% of characters like s___g__. \"audio\" and \"audio example\" should be empty. IMPORTANT: ALL content including meanings, definitions, and examples MUST be in the TARGET LANGUAGE specified by the user, Example should be english",
+  "Basic": "\"suggest\": hide 80% of characters like s____g__. \"Front\" and \"Back\" content MUST be in the TARGET LANGUAGE specified by the user. Do not mix languages."
+}
