@@ -19,6 +19,7 @@
         <nav class="tabs">
             <button class="tab-button active" data-tab="single">Single Card</button>
             <button class="tab-button" data-tab="batch">Batch Import</button>
+            <button class="tab-button" data-tab="manage">Manage Notes</button>
             <button class="tab-button" data-tab="instructions">Model Instructions</button>
             <button class="tab-button" data-tab="settings">Settings</button>
         </nav>
@@ -52,7 +53,10 @@
                     <input type="text" id="language" name="language" value="English" required>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Generate Card</button>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">Generate Card</button>
+                    <button type="button" class="btn btn-secondary" onclick="checkDuplicate()">Check Duplicate</button>
+                </div>
             </form>
 
             <div id="previewSection" class="preview-section" style="display: none;">
@@ -95,7 +99,10 @@
                     <input type="text" id="batchLanguage" name="batchLanguage" value="English" required>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Start Batch Import</button>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">Start Batch Import</button>
+                    <button type="button" class="btn btn-secondary" onclick="checkBatchDuplicates()">Check Duplicates</button>
+                </div>
             </form>
 
             <div id="batchProgress" class="batch-progress" style="display: none;">
@@ -163,6 +170,46 @@
                     <h3>Saved Instructions</h3>
                     <div id="savedInstructionsList"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Manage Notes Tab -->
+        <div class="tab-content" id="manage-tab">
+            <h2>Manage Notes</h2>
+            
+            <div class="delete-controls">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="deleteDeck">Select Deck:</label>
+                        <select id="deleteDeck" required>
+                            <option value="">All Decks</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="deleteSearch">Search (optional):</label>
+                        <input type="text" id="deleteSearch" placeholder="Search in fields...">
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" onclick="searchNotes()">Search Notes</button>
+            </div>
+            
+            <div id="deleteResults" style="display: none;">
+                <div class="delete-header">
+                    <div class="delete-stats">
+                        <span id="deleteStats"></span>
+                    </div>
+                    <div class="delete-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="selectAllDelete(true)">Select All</button>
+                        <button class="btn btn-secondary btn-sm" onclick="selectAllDelete(false)">Deselect All</button>
+                        <button class="btn btn-danger" onclick="deleteSelected()" id="deleteSelectedBtn">Delete Selected</button>
+                    </div>
+                </div>
+                
+                <div id="notesList"></div>
+                
+                <div class="pagination" id="deletePagination"></div>
             </div>
         </div>
 

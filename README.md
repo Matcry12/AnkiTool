@@ -1,6 +1,14 @@
 # AnkiTool
 
-An AI-powered tool for generating Anki flashcards with support for multiple LLM providers (Gemini, OpenAI, and custom models). Features a web UI for easy interaction and batch processing capabilities.
+An AI-powered tool for generating Anki flashcards with support for multiple LLM providers (Gemini, OpenAI, and custom models). Features a web UI for easy interaction, smart batch processing, duplicate detection, and full note management capabilities.
+
+## Quick Start
+
+1. Install Anki with AnkiConnect addon
+2. Clone repo and configure `.env` with your API keys
+3. Run with Docker: `docker-compose up -d`
+4. Open http://localhost:5000
+5. Start creating cards!
 
 ## Table of Contents
 
@@ -22,8 +30,11 @@ An AI-powered tool for generating Anki flashcards with support for multiple LLM 
 
 - 🤖 **Multiple LLM Support**: Gemini, OpenAI, and custom models (Ollama, etc.)
 - 🌐 **Web Interface**: User-friendly UI for creating cards and managing settings
-- 📦 **Batch Import**: Process multiple words at once
+- 📦 **Smart Batch Import**: Process multiple words with preview before adding
+- 🔍 **Duplicate Detection**: Check for existing cards before creating new ones
+- ✏️ **Note Management**: Search, edit, and delete existing Anki notes
 - 🎯 **Field-Specific Instructions**: Customize AI behavior for each Anki field
+- ⚡ **Improved Workflow**: Handle duplicates and errors gracefully
 - 🔧 **Flexible Configuration**: Environment-based settings
 - 🐳 **Docker Support**: Easy deployment with Docker Compose
 - 🌍 **Multi-language**: Generate cards in any target language
@@ -64,6 +75,20 @@ An AI-powered tool for generating Anki flashcards with support for multiple LLM 
 
 5. **Access the web interface**:
    Open http://localhost:5000 in your browser
+
+#### Updating Docker Container
+
+When code changes are made:
+
+```bash
+# Method 1: Rebuild completely
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+
+# Method 2: If using volume mounts (faster)
+docker-compose restart
+```
 
 ### Manual Installation
 
@@ -135,26 +160,61 @@ CUSTOM_API_KEY=dummy-key
 1. **Single Card Creation**:
    - Select deck and model
    - Enter word and target language
-   - Preview generated content
+   - **Check Duplicate** button to verify if card already exists
+   - Preview generated content with duplicate warnings
    - Add to Anki or edit before adding
+   - Force add as duplicate if needed
 
-2. **Batch Import**:
+2. **Smart Batch Import**:
    - Enter multiple words (one per line)
-   - Select deck, model, and language
-   - Process all words at once
-   - Click on results to view details
+   - **Check Duplicates** to preview which words already exist
+   - Generate all cards first, then review before adding
+   - Checkboxes to select which cards to import
+   - **Still Add** button for duplicates/errors
+   - **Edit** button to modify fields before adding
+   - **Add Selected to Anki** to import only checked items
 
-3. **Model Instructions**:
+3. **Manage Notes** (Search, Edit, Delete):
+   - Search notes by deck and/or keywords
+   - Pagination for large collections (20 notes per page)
+   - **Edit** button to modify any field in existing notes
+   - **View** button to see all fields
+   - Bulk selection with checkboxes
+   - **Select All/Deselect All** for easy management
+   - Safe deletion with confirmation dialog
+
+4. **Model Instructions**:
    - Select a model to configure
    - Add instructions for each field
    - Enable strict formatting and validation
    - Save custom instructions per model
 
-4. **Settings**:
+5. **Settings**:
    - Configure Anki connection
    - Choose LLM provider
    - Add API keys
    - Test connections
+
+### Key Workflow Improvements
+
+**Duplicate Handling**:
+- Check for duplicates before generating cards
+- Visual warnings for duplicate cards
+- Option to force add duplicates when needed
+- Batch duplicate checking shows which specific words exist
+
+**Error Recovery**:
+- Edit generated content before adding to Anki
+- Fix errors in batch import without regenerating
+- "Still Add" button for problematic cards
+- Detailed error messages for debugging
+
+**Note Management**:
+- Search across all decks or specific deck
+- Edit any field in existing notes
+- Bulk operations with checkboxes
+- Safe deletion with confirmation
+- Pagination prevents lag with large decks
 
 ### Command Line
 
@@ -219,7 +279,16 @@ Customize how the AI generates content for each field:
 - `GET /api/model_fields/<model>` - Get fields for a model
 - `POST /api/generate_note` - Generate card content
 - `POST /api/add_note` - Add note to Anki
-- `POST /api/batch_generate` - Batch process words
+- `POST /api/batch_generate` - Batch process words (deprecated)
+- `POST /api/batch_generate_preview` - Generate all notes for preview
+- `POST /api/batch_add_selected` - Add selected notes from batch
+- `POST /api/add_duplicate_note` - Force add duplicate note
+
+### Note Management Endpoints
+
+- `POST /api/search_notes` - Search notes with pagination
+- `POST /api/update_note` - Update existing note fields
+- `POST /api/delete_notes` - Delete selected notes
 
 ### Settings Endpoints
 

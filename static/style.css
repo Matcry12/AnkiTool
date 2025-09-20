@@ -222,6 +222,20 @@ textarea {
     background-color: #5a6268;
 }
 
+.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 0.875em;
+}
+
 .btn-danger {
     background-color: #dc3545;
     color: white;
@@ -337,11 +351,28 @@ textarea {
     color: #721c24;
 }
 
+.result-item.warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.result-item .btn-warning {
+    flex-shrink: 0;
+}
+
 .result-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 5px 0;
+    gap: 10px;
+}
+
+.result-header > div {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
 }
 
 .result-word {
@@ -796,6 +827,158 @@ textarea {
     background-color: #d1ecf1;
     color: #0c5460;
     border: 1px solid #bee5eb;
+}
+
+/* Alert styles */
+.alert {
+    padding: 15px 20px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid transparent;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.alert strong {
+    font-weight: 600;
+}
+
+/* Batch import styles */
+.batch-controls {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.batch-item-container {
+    min-height: 60px;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    font-weight: 500;
+    background-color: rgba(0,0,0,0.05);
+}
+
+.result-item.success .status-badge {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.result-item.warning .status-badge {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.result-item.error .status-badge {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.batch-item-details {
+    background-color: #f8f9fa;
+    margin: 0 -10px -10px -10px;
+}
+
+input[type="checkbox"] {
+    cursor: pointer;
+    transform: scale(1.2);
+}
+
+/* Delete Notes styles */
+.delete-controls {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.delete-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.delete-stats {
+    font-weight: 500;
+}
+
+.delete-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.delete-note-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    margin-bottom: 10px;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.delete-note-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.delete-checkbox {
+    flex-shrink: 0;
+}
+
+.note-info {
+    flex: 1;
+}
+
+.note-preview {
+    font-size: 1em;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.note-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 0.85em;
+    color: #666;
+}
+
+.note-model {
+    background-color: #e9ecef;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.note-tags {
+    font-style: italic;
+}
+
+#notesList {
+    margin-bottom: 20px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 20px;
+}
+
+.pagination .btn {
+    min-width: 40px;
 }
 
 /* Responsive */

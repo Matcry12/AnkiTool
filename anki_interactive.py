@@ -85,6 +85,18 @@ class AnkiConnectClient:
     
     def notes_info(self, notes: List[int]) -> List[Dict]:
         return self._invoke("notesInfo", {"notes": notes})
+    
+    def delete_notes(self, note_ids: List[int]) -> None:
+        return self._invoke("deleteNotes", {"notes": note_ids})
+    
+    def find_cards(self, query: str) -> List[int]:
+        return self._invoke("findCards", {"query": query})
+    
+    def cards_info(self, cards: List[int]) -> List[Dict]:
+        return self._invoke("cardsInfo", {"cards": cards})
+    
+    def update_note(self, note: Dict) -> None:
+        return self._invoke("updateNote", {"note": note})
 
 class LLMClient:
     def __init__(self, provider: LLMProvider = LLMProvider.GEMINI, api_key: str = None, 
