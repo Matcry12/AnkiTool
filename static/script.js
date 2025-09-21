@@ -1387,7 +1387,7 @@ async function checkDuplicate() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 deck_name: deck,
-                search_term: word,
+                search_term: `w:${word}`,
                 page: 1,
                 per_page: 10
             })
@@ -1400,10 +1400,10 @@ async function checkDuplicate() {
         }
         
         if (result.notes.length === 0) {
-            showSuccess(`No duplicate found for "${word}" in deck "${deck}"`);
+            showSuccess(`No exact match found for the word "${word}" in deck "${deck}"`);
         } else {
             // Show duplicates in a modal
-            let duplicatesHtml = `<h3>Found ${result.notes.length} potential duplicate(s) for "${word}"</h3>`;
+            let duplicatesHtml = `<h3>Found ${result.notes.length} note(s) with the exact word "${word}"</h3>`;
             result.notes.forEach(note => {
                 duplicatesHtml += `
                     <div style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
@@ -1451,7 +1451,7 @@ async function checkBatchDuplicates() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     deck_name: deck,
-                    search_term: word.trim(),
+                    search_term: `w:${word.trim()}`,
                     page: 1,
                     per_page: 1
                 })

@@ -173,8 +173,14 @@ def generate_note():
             "tags": [language.lower(), "llm-generated", "web-ui"]
         }
         
-        # Check if can add
-        can_add = anki_client.can_add_notes([note])[0]
+        # Check if the word already exists in the deck
+        # Search for the exact word (not substrings) in the specified deck
+        # Using w: prefix for whole word matching
+        search_query = f'deck:"{deck_name}" w:{word}'
+        existing_note_ids = anki_client.find_notes(search_query)
+        
+        # If we find any notes with this exact word, it's a duplicate
+        can_add = len(existing_note_ids) == 0
         
         return jsonify({
             "status": "success",
@@ -383,8 +389,11 @@ def batch_generate():
                     "tags": [language.lower(), "llm-generated", "batch-import", "web-ui"]
                 }
                 
-                # Check if note can be added
-                can_add = anki_client.can_add_notes([note])[0]
+                # Check if the word already exists in the deck
+                # Using w: prefix for whole word matching
+                search_query = f'deck:"{deck_name}" w:{word}'
+                existing_note_ids = anki_client.find_notes(search_query)
+                can_add = len(existing_note_ids) == 0
                 
                 if can_add:
                     # Add note normally
@@ -512,8 +521,11 @@ def batch_generate_preview():
                     "tags": [language.lower(), "llm-generated", "batch-import", "web-ui"]
                 }
                 
-                # Check if note can be added
-                can_add = anki_client.can_add_notes([note])[0]
+                # Check if the word already exists in the deck
+                # Using w: prefix for whole word matching
+                search_query = f'deck:"{deck_name}" w:{word}'
+                existing_note_ids = anki_client.find_notes(search_query)
+                can_add = len(existing_note_ids) == 0
                 
                 results.append({
                     "word": word,
